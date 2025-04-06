@@ -9,9 +9,6 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        browser: [chromium, firefox, webkit]
     steps:
     - uses: actions/checkout@v4
     
@@ -27,25 +24,27 @@ jobs:
       run: npx playwright install --with-deps
       
     - name: Run Playwright tests
-      run: npx playwright test --project=${{ matrix.browser }}
+      run: npx playwright test
       env:
         CI: true
-        BASE_URL: ${{ secrets.BASE_URL || 'http://localhost:3000' }}
         
     - name: Upload HTML report
       uses: actions/upload-artifact@v3
       if: always()
       with:
-        name: playwright-report-${{ matrix.browser }}
+        name: playwright-report
         path: playwright-report/
         retention-days: 7
-        
-    - name: Upload test results
-      uses: actions/upload-artifact@v3
-      if: failure()
+
+  download:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v3
       with:
-        name: test-results-${{ matrix.browser }}
-        path: |
-          test-results/
-          playwright-report/
-        retention-days: 7
+        name: playwright-report
+        path: playwright-report-downloaded/
+        
+    - name: List downloaded files
+      run: ls -R playwright-report-downloaded/
